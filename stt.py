@@ -44,7 +44,7 @@ def va_listen(callback, fuzz, tts, alias):
                     vrt = fuzz.ratio(mas['partial'], x)
                     if vrt > 50:
                         call = 1
-                        tts.play()
+                        tts.aplay()
                         
                         break
                             
