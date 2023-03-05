@@ -7,7 +7,7 @@ import json
 
 
 
-model = vosk.Model("model_small")
+model = vosk.Model("model")
 samplerate = 16000
 device = 1
 
