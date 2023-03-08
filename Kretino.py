@@ -1,15 +1,33 @@
 import config
-import threading
-import time
 import stt
 import tts
-from rapidfuzz import fuzz
-import datetime
 import chisla
-import webbrowser
+
+#Работа со временем
+import datetime
+import time
+
+#Для скачивания музыки
 import musik
-from pygame import mixer
-mixer.init()
+
+#from pygame import mixer
+from rapidfuzz import fuzz
+import threading
+
+#Аудиоплеер
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtCore import QUrl
+
+
+#mixer.init()
+player = QMediaPlayer()
+
+#музыка таймера
+timMus = QMediaPlayer()
+timMus.setMedia(QMediaContent(QUrl.fromLocalFile('timer.mp3')))
+
+
+print(player.mediaStatus())
 
 mus = {
     'name': None,
@@ -25,15 +43,15 @@ print(f"{config.VA_NAME} (v{config.VA_VER}) начал свою работу ...
 
 def autoplay():
     global mus
-    if not mixer.music.get_busy() and mus['auto'] == True:
+    if  player.state() != 1 and mus['auto'] == True:
 
-        mixer.music.unload()
+        
         mus['track_num'] += 1
         #поиск по имени +- автор
 
         if mus['name'] != None:
             
-            if musik.play(f"{mus['name']} {mus['author'] if mus['author'] != None else ''}", mixer, num = mus['track_num']) == False:
+            if musik.play(f"{mus['name']} {mus['author'] if mus['author'] != None else ''}", player, num = mus['track_num']) == False:
                 
                 mus['auto'] = False
                 mus['track_num'] = 0
@@ -44,7 +62,7 @@ def autoplay():
         #поиск только по автору
         elif mus['name'] == None:
             
-            if musik.play(mus['author'], mixer, num = mus['track_num'],  a = True) == False:
+            if musik.play(mus['author'], player, num = mus['track_num'],  a = True) == False:
                 mus['auto'] = False
                 mus['track_num'] = 0
             else:
@@ -143,23 +161,12 @@ def execute_cmd(cmd: str, text: str):
         
 
         
-        
-
-        
-
-        #перезагрузка если занят
-        try:
-            if mixer.music.get_busy(): 
-                mixer.music.stop() 
-
-            mixer.music.unload()
-        except: pass
 
         #поиск по имени +- автору
         if mus['name'] != None:
             
 
-            if musik.play(f"{mus['name']} {mus['author'] if mus['author'] != None else ''}", mixer, num = mus['track_num']) == False:
+            if musik.play(f"{mus['name']} {mus['author'] if mus['author'] != None else ''}", player, num = mus['track_num']) == False:
                 text = "Я ничего не нашел"
                 tts.va_speak(text)
             else:
@@ -170,7 +177,7 @@ def execute_cmd(cmd: str, text: str):
 
         #поиск только по автору
         elif mus['name'] == None and mus['author'] != None:
-            if musik.play(mus['author'], mixer, num = mus['track_num'],  a = True) == False:
+            if musik.play(mus['author'], player, num = mus['track_num'],  a = True) == False:
                 text = "Я ничего не нашел"
                 tts.va_speak(text)
                 
@@ -210,9 +217,14 @@ def execute_cmd(cmd: str, text: str):
         quit()
 
     elif cmd == 'stopmus':
-        
-        if mixer.music.get_busy():
-            mixer.music.pause()
+
+        if timMus.state() == 1:
+            timMus.stop()
+
+            if player.state() == 2: player.play()
+
+        elif player.state() == 1:
+            player.pause()
             mus['auto'] = False
             
         else:
@@ -222,9 +234,9 @@ def execute_cmd(cmd: str, text: str):
 
     elif cmd == 'cont':
         
-        if not mixer.music.get_busy():
+        if player.state() != 1:
             try:
-                mixer.music.unpause()
+                player.play()
                 mus['auto'] = True
             except:
                 text = 'Нечего продолжать' 
@@ -240,10 +252,9 @@ def execute_cmd(cmd: str, text: str):
         def set_timer(n: int):
             print(f'таймер на {n} минут')
             time.sleep(n*60)
-            if mixer.music.get_busy(): mixer.music.pause()
-            mixer.music.unload()
-            mixer.music.load('timer.mp3')
-            mixer.music.play()
+            if player.state() == 1: player.pause()
+            timMus.play()
+            
         
         threading.Thread(target=set_timer, args=[minutes]).start() if minutes!=0 else 0
 
@@ -255,10 +266,6 @@ def execute_cmd(cmd: str, text: str):
         tts.va_speak(text)
 
 
-
-    elif cmd == 'open_browser':
-        chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
-        webbrowser.get(chrome_path).open("http://python.org")
 
     
     

@@ -3,18 +3,21 @@ import config
 import time
 from threading import Thread, Event
 
+from PyQt5.QtMultimedia import QMediaContent
+from PyQt5.QtCore import QUrl
+
 
 client = Client(config.MUS_TOKEN).init()
 
 
 
-def play(name, mix, a = False, num = 0):
+def play(name, player, a = False, num = 0):
     
     if download(name, a, num) == False:
         return False
 
-    mix.music.load("now.mp3")
-    mix.music.play()
+    player.setMedia(QMediaContent(QUrl.fromLocalFile('now.mp3')))
+    player.play()
    
 
 
