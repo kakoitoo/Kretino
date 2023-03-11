@@ -10,6 +10,7 @@ def play():
     wave_object = simple_audio.WaveObject.from_wave_file(filename) 
     play_object = wave_object.play() 
     play_object.wait_done()
+    
 
 torch._C._jit_set_profiling_mode(False)
 
@@ -36,10 +37,10 @@ def aplay():
     threading.Thread(target = play).start()
     
 
-def va_speak(what: str):
-    threading.Thread(target = va_speak_th, args=(what, )).start()
+def va_speak(what: str, player = None, vol = None):
+    threading.Thread(target = va_speak_th, args=(what, player, vol)).start()
 
-def va_speak_th(what: str):
+def va_speak_th(what: str, player = None, vol = None):
     try:
         audio = model.apply_tts(text=what+"..",
                                 speaker=speaker,
@@ -53,6 +54,9 @@ def va_speak_th(what: str):
     except Exception as e:
         print("Ашипка:", e)
 
+    if player != None:
+        player.setVolume(vol)
+
 
 
 
@@ -61,5 +65,6 @@ audio = model.apply_tts(text=text+"..",
                             sample_rate=sample_rate,
                             put_accent=put_accent,
                             put_yo=put_yo)
-                            
+
+
 va_speak(text)

@@ -19,9 +19,10 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
 
 
+
 #mixer.init()
 player = QMediaPlayer()
-
+player.setVolume(config.DEF_VOL)
 #музыка таймера
 timMus = QMediaPlayer()
 timMus.setMedia(QMediaContent(QUrl.fromLocalFile('timer.mp3')))
@@ -88,7 +89,7 @@ def filter_cmd(raw_voice: str):
 
     for x in config.VA_TBR:
         cmd = cmd.replace(x, "").strip()
-
+    print(f'распознано: {cmd}')
     return cmd
 
 
@@ -97,13 +98,35 @@ def recognize_cmd(text: str):
     if 'поставь' in text or 'включи' in text or 'играй' in text:
         rc['cmd'] = 'startmus' 
         return (rc, text)
-    for c, v in config.VA_CMD_LIST.items():
 
-        for x in v:
-            vrt = fuzz.ratio(text, x)
-            if vrt > rc['percent']:
-                rc['cmd'] = c
-                rc['percent'] = vrt
+    if text == 'тише': 
+        rc['cmd'] = 'vol-' 
+        return (rc, text)
+    if text == 'громче': 
+        rc['cmd'] = 'vol+' 
+        return (rc, text)
+
+    for c, v in config.VA_CMD_LIST.items():
+        if c in ['timer', 'vol=']:
+            for x in v:
+                vrt = fuzz.ratio(text, x)
+                if vrt >= rc['percent']:
+                    rc['cmd'] = c
+                    rc['percent'] = vrt
+
+
+
+        else:
+            for x in v:
+                vrt = 101 if x == text else fuzz.ratio(text, x)
+                if vrt >= rc['percent'] :
+                    rc['cmd'] = c
+                    rc['percent'] = vrt
+
+
+
+    if len(text) < 4:
+        rc['cmd'] = 'what' 
 
     if rc['percent'] < 30:
         rc['cmd'] = 'what' 
@@ -117,16 +140,16 @@ def execute_cmd(cmd: str, text: str):
         # help
         text = "Я умею: ..."
         text += "произносить время ..."
-        text += "и открывать браузер"
-        tts.va_speak(text)
+        text += "делаю отличные минеты"
+        tts.va_speak(text, player, config.DEF_VOL)
     
     elif cmd == 'i':
         text = "Привет... я подсяду"
-        tts.va_speak(text)
+        tts.va_speak(text, player, config.DEF_VOL)
 
     elif cmd == 'what':
         text = "Моя твоя не понимать"
-        tts.va_speak(text)
+        tts.va_speak(text, player, config.DEF_VOL)
 
     elif cmd == 'startmus':
         a = text.find('поставь') if text.find('поставь')!= -1 else 999
@@ -168,10 +191,10 @@ def execute_cmd(cmd: str, text: str):
 
             if musik.play(f"{mus['name']} {mus['author'] if mus['author'] != None else ''}", player, num = mus['track_num']) == False:
                 text = "Я ничего не нашел"
-                tts.va_speak(text)
+                tts.va_speak(text, player, config.DEF_VOL)
             else:
                 text = 'Моё сердце бьётся в ритме диско!'
-                tts.va_speak(text)
+                tts.va_speak(text, player, config.DEF_VOL)
                 mus['auto'] = True
                 
 
@@ -179,41 +202,62 @@ def execute_cmd(cmd: str, text: str):
         elif mus['name'] == None and mus['author'] != None:
             if musik.play(mus['author'], player, num = mus['track_num'],  a = True) == False:
                 text = "Я ничего не нашел"
-                tts.va_speak(text)
+                tts.va_speak(text, player, config.DEF_VOL)
                 
 
             else:
                 text = 'Моё сердце бьётся в ритме диско!'
-                tts.va_speak(text)
+                tts.va_speak(text, player, config.DEF_VOL)
                 mus['auto'] = True
                 
         
         else:
             text = f"Я не услышал, повтори"
-            tts.va_speak(text)
+            tts.va_speak(text, player, config.DEF_VOL)
 
+    elif cmd == 'vol=':
+        text = text.replace(['громкость', 'на'])
+        vol = chisla.anti_chis(text)
+
+        config.DEF_VOL = vol if vol <= 100 else 100
+
+        player.setVolume(config.DEF_VOL)
+
+    elif cmd == 'vol+':
+        
+        config.DEF_VOL = config.DEF_VOL + 10 if config.DEF_VOL + 10 <= 100 else 100
+
+         
+        print(f'Текущая громкость {config.DEF_VOL}')
+
+    elif cmd == 'vol-':
+        
+        config.DEF_VOL = config.DEF_VOL - 10 if config.DEF_VOL - 10 >= 0 else 0
+
+        player.setVolume(config.DEF_VOL) 
+        print(f'Текущая громкость {config.DEF_VOL}')
 
     elif cmd == 'nowplaing':
         if mus['name'] != None:
             text = f"Сейчас играет {mus['author'] if mus['author']!=None else ''} ... {mus['name']}"
-            tts.va_speak(text)
+            tts.va_speak(text, player, config.DEF_VOL)
 
         elif mus['author'] != None:
             text = f"Сейчас играет поток {mus['author'] if mus['author']!=None else ''}"
-            tts.va_speak(text)
+            tts.va_speak(text, player, config.DEF_VOL)
 
         else:
             text = "Сейчас ничего не играет... Рассказать шутку про глухих?"
-            tts.va_speak(text)
+            tts.va_speak(text, player, config.DEF_VOL)
 
 
     elif cmd == 'royal':
         text = 'О Боже! Что он делает?! Кретино! Тенти остатенти! Дольваре дес культе, дес фрути та дьяволо! Пиодоро апире! Пароле бова вита, дольче вита э финита! Мама мия!' 
-        tts.va_speak(text)
+        tts.va_speak(text, player, config.DEF_VOL)
         
     elif cmd == 'bb':
         text = 'чэнж дээ воорд ... май фаайнал мээсэдж ... гудбаай' 
-        tts.va_speak(text)
+        tts.va_speak(text, player, config.DEF_VOL)
         quit()
 
     elif cmd == 'stopmus':
@@ -229,7 +273,7 @@ def execute_cmd(cmd: str, text: str):
             
         else:
             text = 'Музыка не играет' 
-            tts.va_speak(text)
+            tts.va_speak(text, player, config.DEF_VOL)
 
 
     elif cmd == 'cont':
@@ -240,11 +284,11 @@ def execute_cmd(cmd: str, text: str):
                 mus['auto'] = True
             except:
                 text = 'Нечего продолжать' 
-                tts.va_speak(text)
+                tts.va_speak(text, player, config.DEF_VOL)
 
         else:
             text = 'Музыка уже играет' 
-            tts.va_speak(text)
+            tts.va_speak(text, player, config.DEF_VOL)
 
     elif cmd == 'timer':
         minutes = chisla.anti_chis(text)
@@ -263,7 +307,7 @@ def execute_cmd(cmd: str, text: str):
         # current time
         now = datetime.datetime.now()
         text = "Сейчас " + chisla.chis(now.hour) + " часов" + chisla.chis(now.minute) + "минут"
-        tts.va_speak(text)
+        tts.va_speak(text, player, config.DEF_VOL)
 
 
 
@@ -277,4 +321,4 @@ def execute_cmd(cmd: str, text: str):
 
 
 # начать прослушивание команд
-stt.va_listen(va_respond, fuzz, tts, config.VA_ALIAS)
+stt.va_listen(va_respond, player, fuzz, tts, config.VA_ALIAS)

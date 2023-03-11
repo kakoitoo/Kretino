@@ -3,6 +3,7 @@ import sys
 import sounddevice as sd
 import queue
 import json
+import config
 
 
 
@@ -20,7 +21,7 @@ def q_callback(indata, frames, time, status):
     q.put(bytes(indata))
 
 
-def va_listen(callback, fuzz, tts, alias):
+def va_listen(callback, player, fuzz, tts, alias):
     with sd.RawInputStream(samplerate=samplerate, blocksize=8000, device=device, dtype='int16',
                            channels=1, callback=q_callback):
 
@@ -40,13 +41,15 @@ def va_listen(callback, fuzz, tts, alias):
                 mas = eval(rec.PartialResult().strip())
                 
 
-                for x in alias:
-                    vrt = fuzz.ratio(mas['partial'], x)
-                    if vrt > 50:
-                        call = 1
-                        tts.aplay()
+                if mas['partial'].startswith(alias):
+                    call = 1
+                    
+
+                    player.setVolume(15)
+                     
+                    tts.play()
                         
-                        break
+                    
                             
                 
     
